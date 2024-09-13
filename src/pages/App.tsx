@@ -8,33 +8,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from "@/components/ui/label"
 import Tracking_Map from '@/components/ui/Map';
 import equipment from '../data/equipment.json';
 import position from '../data/equipmentPositionHistory.json';
 import { useState, useEffect } from 'react';
 
-type Position = {
+type EquipmentPosition = {
   date: string;
   lat: number;
   lon: number;
+  equipmentId: string;
+};
+
+type HourlyEarnings = {
+  equipmentStateId: string;
+  value: number;
 };
 
 type Equipment = {
   id: string;
   equipmentModelId: string;
   name: string;
+  hourlyEarnings?: HourlyEarnings[]; // Tornar hourlyEarnings opcional
 };
 
 type PositionHistory = {
   equipmentId: string;
-  positions: Position[];
+  positions: Omit<EquipmentPosition, 'equipmentId'>[];
 };
 
 type CombinedData = {
   id: string;
   name: string;
-  positions: Position[];
+  hourlyEarnings: HourlyEarnings[]; // Garantir que hourlyEarnings esteja presente aqui
+  positions: EquipmentPosition[];
 };
 
 function App() {
@@ -46,15 +53,24 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Supondo que os dados do arquivo são compatíveis com o tipo Equipment
         const equipmentData: Equipment[] = await new Promise(resolve => resolve(equipment));
         const positionData: PositionHistory[] = await new Promise(resolve => resolve(position));
 
         const combined = equipmentData.map(equip => {
           const posHistory = positionData.find(pos => pos.equipmentId === equip.id);
+          const positionsWithId = posHistory
+            ? posHistory.positions.map((pos) => ({
+                ...pos,
+                equipmentId: equip.id,
+              }))
+            : [];
+
           return {
             id: equip.id,
             name: equip.name,
-            positions: posHistory ? posHistory.positions : []
+            hourlyEarnings: equip.hourlyEarnings || [], // Garantir que hourlyEarnings é um array
+            positions: positionsWithId,
           };
         });
 
@@ -70,7 +86,6 @@ function App() {
     fetchData();
   }, []);
 
-  // Filtrar posições para o equipamento selecionado
   const selectedEquipment = dataEquipment.find(equip => equip.id === selectedEquipmentId);
   const positionData = selectedEquipment ? selectedEquipment.positions : [];
 
@@ -79,8 +94,7 @@ function App() {
 
   return (
     <div className=''>
-      <div className='flex align-middle'>
-      <Label className='mr-3'>Equipamentos:</Label>
+      <div className='flex'>
         <Select onValueChange={(value) => setSelectedEquipmentId(value)}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Selecione o Equipamento" />
@@ -99,7 +113,7 @@ function App() {
       </div>
       <div className='flex flex-col justify-center mx-auto'>
         <h1>Meu Mapa Google</h1>
-        <Tracking_Map positionData={positionData} />
+        <Tracking_Map positionData={positionData} equipmentData={dataEquipment} />
       </div>
     </div>
   );
