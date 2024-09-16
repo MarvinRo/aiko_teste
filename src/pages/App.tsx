@@ -71,7 +71,6 @@ function App() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]); // Estado para status (array)
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastCenter, setLastCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   const { equipment, positionHistory, models, stateHistory, states } = useData();
 
@@ -97,13 +96,13 @@ function App() {
             positions: posHistory ? posHistory.positions : [{ date: 'N/A', lat: 0, lon: 0 }],
             stateHistory: state
               ? {
-                  equipmentId: state.equipmentId,
-                  states: state.states,
-                }
+                equipmentId: state.equipmentId,
+                states: state.states,
+              }
               : {
-                  equipmentId: 'N/A',
-                  states: [{ date: 'N/A', equipmentStateId: 'N/A' }],
-                },
+                equipmentId: 'N/A',
+                states: [{ date: 'N/A', equipmentStateId: 'N/A' }],
+              },
           };
         });
         setDataEquipment(combined);
@@ -143,10 +142,29 @@ function App() {
   useEffect(() => {
     if (selectedEquipment && selectedEquipment.positions.length > 0) {
       const firstPosition = selectedEquipment.positions[0];
-      setLastCenter({ lat: firstPosition.lat, lng: firstPosition.lon });
     }
   }, [selectedEquipment]);
 
+  // Aplica o filtro na hora da seleção.
+  const filteredPositions = selectedEquipment
+    ? selectedTime
+      ? {
+          ...selectedEquipment,
+          positions: selectedEquipment.positions.filter(position => position.date === selectedTime)
+        }
+      : selectedStatus.length > 0
+        ? {
+            ...selectedEquipment,
+            positions: selectedEquipment.positions.filter(position => {
+              const stateForPosition = selectedEquipment.stateHistory.states.find(
+                state => state.date === position.date
+              );
+              return stateForPosition && selectedStatus.includes(stateForPosition.equipmentStateId);
+            })
+          }
+        : selectedEquipment
+    : null;
+  
   if (loading) return <div>Carregando...</div>;
   if (error) return <div>{error}</div>;
 
@@ -155,7 +173,7 @@ function App() {
       <div className="flex justify-center align-middle flex-row mt-4 ml-4">
         <div className="flex">
           <Label className="flex mr-4">Equipamentos:</Label>
-          <Select onValueChange={value => setSelectedEquipmentId(value)}>
+          <Select onValueChange={value => setSelectedEquipmentId(value)} >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione o Equipamento" />
             </SelectTrigger>
@@ -169,7 +187,7 @@ function App() {
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem disabled>Nenhum equipamento disponível</SelectItem>
+                  <SelectItem disabled>Nenhum equipamento disponível</SelectItem>//bloqueia o select caso não tenha nenhum equipamento na base de dados
                 )}
               </SelectGroup>
             </SelectContent>
@@ -178,7 +196,7 @@ function App() {
 
         <div className="flex ml-4">
           <Label className="flex mr-4">Horário:</Label>
-          <Select onValueChange={value => setSelectedTime(value)}>
+          <Select onValueChange={value => setSelectedTime(value)} disabled={!selectedEquipment}> {/* desabilita o select caso não tenha um equipamento selecionado */}
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um horário" />
             </SelectTrigger>
@@ -197,7 +215,7 @@ function App() {
 
         <div className="flex ml-4">
           <Label className="flex mr-4">Status:</Label>
-          <Select multiple value={selectedStatus} onValueChange={values => setSelectedStatus(values)}>
+          <Select onValueChange={values => setSelectedStatus(values)} disabled={!selectedEquipment}>{/* desabilita o select caso não tenha um equipamento selecionado */}
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um status" />
             </SelectTrigger>
@@ -221,7 +239,7 @@ function App() {
 
       <div className="flex flex-col justify-center my-8 mx-[500px]">
         <Tracking_Map
-          positionData={selectedEquipment ? [selectedEquipment] : []}
+          positionData={filteredPositions ? [filteredPositions] : []}
           equipmentData={filteredEquipment}
           modelData={models}
           stateData={stateHistory}
@@ -232,3 +250,6 @@ function App() {
 }
 
 export default App;
+
+
+/* positionData={selectedEquipment ? [selectedEquipment] : []} */
