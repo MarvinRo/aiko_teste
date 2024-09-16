@@ -12,6 +12,7 @@ import Tracking_Map from '@/pages/Map';
 import { useData } from '../hooks/useData';
 import { useState, useEffect } from 'react';
 import { Label } from '@radix-ui/react-label';
+import { Button } from '@/components/ui/button';
 
 type Equipment = {
   id: string;
@@ -145,26 +146,35 @@ function App() {
     }
   }, [selectedEquipment]);
 
-  // Aplica o filtro na hora da seleção.
-  const filteredPositions = selectedEquipment
-    ? selectedTime
-      ? {
-          ...selectedEquipment,
-          positions: selectedEquipment.positions.filter(position => position.date === selectedTime)
-        }
-      : selectedStatus.length > 0
-        ? {
-            ...selectedEquipment,
-            positions: selectedEquipment.positions.filter(position => {
-              const stateForPosition = selectedEquipment.stateHistory.states.find(
-                state => state.date === position.date
-              );
-              return stateForPosition && selectedStatus.includes(stateForPosition.equipmentStateId);
-            })
-          }
-        : selectedEquipment
-    : null;
-  
+  // Função para limpar a seleção de status e restaurar as posições originais do equipamento
+const handleClearStatus = () => {
+  setSelectedStatus([]); // Limpa a seleção de status
+};
+
+// Função para limpar a seleção de horário e restaurar as posições originais do equipamento
+const handleClearTime = () => {
+  setSelectedTime(null); // Limpa a seleção de horário
+};
+
+// Função de filtro das posições com base no equipamento, status e horário
+const filteredPositions = selectedEquipment
+  ? selectedTime
+    ? {
+        ...selectedEquipment,
+        positions: selectedEquipment.positions.filter(position => position.date === selectedTime),
+      }
+    : selectedStatus.length > 0
+    ? {
+        ...selectedEquipment,
+        positions: selectedEquipment.positions.filter(position => {
+          const stateForPosition = selectedEquipment.stateHistory.states.find(
+            state => state.date === position.date
+          );
+          return stateForPosition && selectedStatus.includes(stateForPosition.equipmentStateId);
+        }),
+      }
+    : selectedEquipment // Caso não haja status ou horário selecionado, retorna todas as posições do equipamento
+  : null;
   if (loading) return <div>Carregando...</div>;
   if (error) return <div>{error}</div>;
 
@@ -211,6 +221,9 @@ function App() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <Button disabled={!selectedEquipment} onClick={()=>{handleClearTime();setSelectedTime(null);}}>
+            Limpar hora
+          </Button>
         </div>
 
         <div className="flex ml-4">
@@ -234,6 +247,10 @@ function App() {
               </SelectGroup>
             </SelectContent>
           </Select>
+
+          <Button disabled={!selectedEquipment} onClick={()=>{handleClearStatus();setSelectedStatus([]);}}>
+            Limpar Status
+          </Button>
         </div>
       </div>
 
