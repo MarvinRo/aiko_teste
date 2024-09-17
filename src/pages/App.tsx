@@ -68,8 +68,8 @@ type CombinedData = {
 function App() {
   const [dataEquipment, setDataEquipment] = useState<CombinedData[]>([]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null); // Estado para horário
-  const [selectedStatus, setSelectedStatus] = useState<string[]>([]); // Estado para status (array)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,54 +135,49 @@ function App() {
     if (selectedStatus.length > 0) {
       return equip.stateHistory.states.some(state => selectedStatus.includes(state.equipmentStateId));
     }
-    return true; // Mostra todos se nenhum status for selecionado
+    return true;
   });
 
   const selectedEquipment = filteredEquipment.find(equip => equip.id === selectedEquipmentId);
 
-  useEffect(() => {
-    if (selectedEquipment && selectedEquipment.positions.length > 0) {
-      const firstPosition = selectedEquipment.positions[0];
-    }
-  }, [selectedEquipment]);
+  // Limpar status e restaurar as posições originais do equipamento
+  const handleClearStatus = () => {
+    setSelectedStatus([]);
+  };
 
-  // Função para limpar a seleção de status e restaurar as posições originais do equipamento
-const handleClearStatus = () => {
-  setSelectedStatus([]); // Limpa a seleção de status
-};
+  // Limpar horário e restaurar as posições originais do equipamento
+  const handleClearTime = () => {
+    setSelectedTime(null);
+  };
 
-// Função para limpar a seleção de horário e restaurar as posições originais do equipamento
-const handleClearTime = () => {
-  setSelectedTime(null); // Limpa a seleção de horário
-};
+  // Função de filtro das posições com base no equipamento, status e horário
+  const filteredPositions = selectedEquipment
+    ? selectedTime
+      ? {
+          ...selectedEquipment,
+          positions: selectedEquipment.positions.filter(position => position.date === selectedTime),
+        }
+      : selectedStatus.length > 0
+      ? {
+          ...selectedEquipment,
+          positions: selectedEquipment.positions.filter(position => {
+            const stateForPosition = selectedEquipment.stateHistory.states.find(
+              state => state.date === position.date
+            );
+            return stateForPosition && selectedStatus.includes(stateForPosition.equipmentStateId);
+          }),
+        }
+      : selectedEquipment
+    : null;
 
-// Função de filtro das posições com base no equipamento, status e horário
-const filteredPositions = selectedEquipment
-  ? selectedTime
-    ? {
-        ...selectedEquipment,
-        positions: selectedEquipment.positions.filter(position => position.date === selectedTime),
-      }
-    : selectedStatus.length > 0
-    ? {
-        ...selectedEquipment,
-        positions: selectedEquipment.positions.filter(position => {
-          const stateForPosition = selectedEquipment.stateHistory.states.find(
-            state => state.date === position.date
-          );
-          return stateForPosition && selectedStatus.includes(stateForPosition.equipmentStateId);
-        }),
-      }
-    : selectedEquipment // Caso não haja status ou horário selecionado, retorna todas as posições do equipamento
-  : null;
   if (loading) return <div>Carregando...</div>;
   if (error) return <div>{error}</div>;
 
   return (
-    <div>
-      <div className="flex justify-center align-middle flex-row mt-4 ml-4">
+    <div className='m-0 p-0 h-[100vh]'>
+      <div className="flex justify-center my-4">
         <div className="flex">
-          <Label className="flex mr-4">Equipamentos:</Label>
+          <Label className="flex my-auto mr-4">Equipamentos:</Label>
           <Select onValueChange={value => setSelectedEquipmentId(value)} >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione o Equipamento" />
@@ -197,7 +192,7 @@ const filteredPositions = selectedEquipment
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem disabled>Nenhum equipamento disponível</SelectItem>//bloqueia o select caso não tenha nenhum equipamento na base de dados
+                  <SelectItem disabled value={''}>Nenhum equipamento disponível</SelectItem>
                 )}
               </SelectGroup>
             </SelectContent>
@@ -205,8 +200,8 @@ const filteredPositions = selectedEquipment
         </div>
 
         <div className="flex ml-4">
-          <Label className="flex mr-4">Horário:</Label>
-          <Select onValueChange={value => setSelectedTime(value)} disabled={!selectedEquipment}> {/* desabilita o select caso não tenha um equipamento selecionado */}
+          <Label className="flex my-auto mr-4">Horário:</Label>
+          <Select onValueChange={value => setSelectedTime(value)} disabled={!selectedEquipment}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um horário" />
             </SelectTrigger>
@@ -221,14 +216,14 @@ const filteredPositions = selectedEquipment
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Button disabled={!selectedEquipment} onClick={()=>{handleClearTime();setSelectedTime(null);}}>
+          <Button className='ml-2' disabled={!selectedEquipment} onClick={handleClearTime}>
             Limpar hora
           </Button>
         </div>
 
         <div className="flex ml-4">
-          <Label className="flex mr-4">Status:</Label>
-          <Select onValueChange={values => setSelectedStatus(values)} disabled={!selectedEquipment}>{/* desabilita o select caso não tenha um equipamento selecionado */}
+          <Label className="flex my-auto mr-4">Status:</Label>
+          <Select onValueChange={values => setSelectedStatus(values)} disabled={!selectedEquipment}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um status" />
             </SelectTrigger>
@@ -247,14 +242,12 @@ const filteredPositions = selectedEquipment
               </SelectGroup>
             </SelectContent>
           </Select>
-
-          <Button disabled={!selectedEquipment} onClick={()=>{handleClearStatus();setSelectedStatus([]);}}>
+          <Button className='ml-2' disabled={!selectedEquipment} onClick={handleClearStatus}>
             Limpar Status
           </Button>
         </div>
       </div>
-
-      <div className="flex flex-col justify-center my-8 mx-[500px]">
+      <div className="flex mx-auto rounded-sm justify-center h-[520px]">
         <Tracking_Map
           positionData={filteredPositions ? [filteredPositions] : []}
           equipmentData={filteredEquipment}
@@ -267,6 +260,3 @@ const filteredPositions = selectedEquipment
 }
 
 export default App;
-
-
-/* positionData={selectedEquipment ? [selectedEquipment] : []} */
