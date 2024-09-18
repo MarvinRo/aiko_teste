@@ -14,6 +14,8 @@ import { useState, useEffect } from 'react';
 import { Label } from '@radix-ui/react-label';
 import { Button } from '@/components/ui/button';
 
+// Defina os tipos conforme sua estrutura de dados
+
 type Equipment = {
   id: string;
   equipmentModelId: string;
@@ -52,6 +54,8 @@ type PositionHistory = {
   positions: Position[];
 };
 
+//Combina as informações para exportar para o Map
+
 type CombinedData = {
   id: string;
   name: string;
@@ -73,10 +77,12 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { equipment, positionHistory, models, stateHistory, states } = useData();
+  const { equipment, positionHistory, models, stateHistory, states } = useData(); //Recebe as iformações vindas do hook useData
 
   useEffect(() => {
     const fetchData = async () => {
+
+      // Tenta fazer a manipulação dos dados recebidos para depois serem utilizados no combined / CombinedData
       try {
         const equipmentData: Equipment[] = Array.isArray(equipment) ? equipment : [];
         const positionData: PositionHistory[] = Array.isArray(positionHistory) ? positionHistory : [];
@@ -93,7 +99,7 @@ function App() {
             name: equip.name,
             equipmentId: equip.id,
             equipmentModelId: model ? model.id : 'Modelo não disponível',
-            hourlyEarnings: model ? model.hourlyEarnings : [{ equipmentStateId: '0', value: 0 }],
+            hourlyEarnings: model ? model.hourlyEarnings : [{ equipmentStateId: '0', value: 0 }], 
             positions: posHistory ? posHistory.positions : [{ date: 'N/A', lat: 0, lon: 0 }],
             stateHistory: state
               ? {
@@ -140,12 +146,12 @@ function App() {
 
   const selectedEquipment = filteredEquipment.find(equip => equip.id === selectedEquipmentId);
 
-  // Limpar status e restaurar as posições originais do equipamento
+  // Limpa o status e restaura as posições originais do equipamento antes do filtro
   const handleClearStatus = () => {
     setSelectedStatus([]);
   };
 
-  // Limpar horário e restaurar as posições originais do equipamento
+  // Limpa o horário e restaurar as posições originais do equipamento antes do filtro
   const handleClearTime = () => {
     setSelectedTime(null);
   };
@@ -155,10 +161,11 @@ function App() {
     ? selectedTime
       ? {
           ...selectedEquipment,
-          positions: selectedEquipment.positions.filter(position => position.date === selectedTime),
+          positions: selectedEquipment.positions.filter(position => position.date === selectedTime), // Faz o filtro da posição do equipamento selecionado pela data e hora
         }
       : selectedStatus.length > 0
       ? {
+        //Faz o filtro de todas as posições esteve com o estatus escolhido
           ...selectedEquipment,
           positions: selectedEquipment.positions.filter(position => {
             const stateForPosition = selectedEquipment.stateHistory.states.find(
@@ -184,7 +191,7 @@ function App() {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Equipamentos</SelectLabel>
+                <SelectLabel>Equipamentos</SelectLabel> {/* Select das informações dos equipamentos mapeados */}
                 {filteredEquipment.length > 0 ? (
                   filteredEquipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
@@ -192,7 +199,7 @@ function App() {
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem disabled value={''}>Nenhum equipamento disponível</SelectItem>
+                  <SelectItem disabled value={''}>Nenhum equipamento disponível</SelectItem>/*  Caso não encontre uma base de equipamentos informara a mensagem */
                 )}
               </SelectGroup>
             </SelectContent>
@@ -201,13 +208,13 @@ function App() {
 
         <div className="flex ml-4">
           <Label className="flex my-auto mr-4">Horário:</Label>
-          <Select onValueChange={value => setSelectedTime(value)} disabled={!selectedEquipment}>
+          <Select onValueChange={value => setSelectedTime(value)} disabled={!selectedEquipment}> {/* Caso não tenha selecionado nenhum equipamento o capos permanecerá desabilitado */}
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um horário" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Horário</SelectLabel>
+                <SelectLabel>Horário</SelectLabel> {/* Select das informações das datas e horas mapeados */}
                 {selectedEquipment?.positions.map((position, index) => (
                   <SelectItem key={index} value={position.date}>
                     {position.date}
@@ -223,7 +230,7 @@ function App() {
 
         <div className="flex ml-4">
           <Label className="flex my-auto mr-4">Status:</Label>
-          <Select onValueChange={values => setSelectedStatus(values)} disabled={!selectedEquipment}>
+          <Select onValueChange={values => setSelectedStatus(values)} disabled={!selectedEquipment}> {/* Caso não tenha selecionado nenhum equipamento o capos permanecerá desabilitado */}
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Selecione um status" />
             </SelectTrigger>
@@ -248,6 +255,7 @@ function App() {
         </div>
       </div>
       <div className="flex mx-auto rounded-sm justify-center h-[520px]">
+        {/* Passa as informações necessárias para ser apresentado no MAP */}
         <Tracking_Map
           positionData={filteredPositions ? [filteredPositions] : []}
           equipmentData={filteredEquipment}

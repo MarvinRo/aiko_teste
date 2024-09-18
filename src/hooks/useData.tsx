@@ -63,14 +63,14 @@ export const useData = () => {
 
   useEffect(() => {
     try {
-      // Aqui você pode atribuir diretamente os dados importados
+      // Seta os estados com as informações dos arquivos JSON
       setEquipment(equipmentData);
       setStates(statesData);
       setModels(modelsData);
       setStateHistory(stateHistoryData);
       setPositionHistory(positionHistoryData);
     } catch (error) {
-      console.error('Erro ao carregar os dados:', error);
+      console.error('Erro ao carregar os dados:', error);//caso tenho não consiga setar as informações.
       setError('Erro ao carregar os dados');
     } finally {
       setLoading(false);
